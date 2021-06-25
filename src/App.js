@@ -1,4 +1,17 @@
-import { Button, Card, Container, TextField } from "@material-ui/core";
+import {
+    Button,
+    Card,
+    CardActionArea,
+    CardHeader,
+    CardActions,
+    CardMedia,
+    CardContent,
+    Container,
+    makeStyles,
+    TextField,
+    Typography,
+} from "@material-ui/core";
+import { Image, Transformation } from "cloudinary-react";
 import React, { useState, useEffect } from "react";
 import { queryCityWeather, queryLatLongWeather } from "./api/ApiCall";
 import theme from "./styles/theme";
@@ -22,11 +35,13 @@ const App = () => {
     const [userTemp, setUserTemp] = useState("");
     const [appError, setAppError] = useState("");
     const [city, setCity] = useState("");
+    const [cityColder, setCityColder] = useState(false);
     const [cityTemp, setCityTemp] = useState("");
     const [tempDifference, setTempDifference] = useState("");
+    const [cityFetched, setCityFetched] = useState(false);
 
     useEffect(() => {
-        document.body.style.backgroundColor = level2;
+        document.body.style.backgroundColor = level3;
         if (navigator.geolocation) {
             console.log("geolocation is available on this browser");
             navigator.permissions
@@ -95,11 +110,6 @@ const App = () => {
         }
     }, []);
 
-    const calculateDiff = (a, b) => {
-        const diff = a > b ? a - b : b - a;
-        return diff.toFixed(1);
-    };
-
     const handleClick = (e) => {
         queryCityWeather(city)
             .then((response) => {
@@ -112,7 +122,10 @@ const App = () => {
                 const t1 = parseFloat(temp);
                 const t2 = parseFloat(userTemp);
                 const diff = t1 > t2 ? t1 - t2 : t2 - t1;
-                setTempDifference(diff.toFixed(2));
+                setCityColder(t1 > t2 ? false : true);
+                console.log(diff);
+                setTempDifference(diff.toFixed(1));
+                setCityFetched(true);
             })
             .catch((error) => {
                 const {
@@ -125,47 +138,124 @@ const App = () => {
     };
 
     const handleChange = (e) => {
+        setCityFetched(false);
         const { value } = e.target;
         setCity(value);
     };
 
-    const outputCurrentTemp = () => {
-        return userTemp !== "" ? `${userTemp} °C` : "loading...";
+    const outputTemp = (type) => {
+        if (type === "user") {
+            return userTemp !== "" ? `${userTemp} °C` : "loading...";
+        } else if (type === "city") {
+            return cityTemp !== "" ? `${cityTemp} °C` : "loading...";
+        }
     };
 
-    return (
-        <Container style={{ backgroundColor: level1 }} maxWidth="md">
-            <Card>
-                <h1 style={{ fontSize: xl }}>My App</h1>
-                <h3 style={{ fontSize: lg }}>
-                    Your current temperature : {outputCurrentTemp()}
-                </h3>
-                <h3>Type in a city name...</h3>
-                <TextField
-                    required
-                    id="standard-basic"
-                    label="City"
-                    onChange={handleChange}
-                    value={city}
-                />
-                <Button
-                    style={{ color: level0, backgroundColor: brand1 }}
-                    onClick={() => handleClick()}
-                    variant="contained"
-                >
-                    Search
-                </Button>
-                {appError !== "" && <p>{appError}</p>}
+    const outputTempDiff = () => {
+        const diffText = cityColder ? "colder" : "hotter";
+        const spanColor = cityColder ? "blue" : "tomato";
+        return (
+            <span style={{ color: spanColor, fontWeight: "bold" }}>
+                {tempDifference !== ""
+                    ? `(${tempDifference} °C ${diffText})`
+                    : "loading..."}
+            </span>
+        );
+    };
 
-                {city !== "" && (
-                    <>
-                        <h3>{`Current temperature in ${city}:`}</h3>
-                        <p>{`${cityTemp} °C`}</p>
-                    </>
-                )}
-                {tempDifference !== "" && (
-                    <p>{`Temp difference: ${tempDifference} °C`}</p>
-                )}
+    const useStyles = makeStyles({
+        card: {
+            maxWidth: 920,
+            padding: 50,
+        },
+        center: {
+            margin: "0 auto",
+        },
+        container: {
+            padding: `65px 130px`,
+            // backgroundColor: level1,
+        },
+        title: {
+            fontSize: xl,
+            color: brand1,
+            marginTop: 20,
+            marginBottom: 20,
+        },
+        header: {
+            fontSize: lg,
+            color: brand2,
+        },
+        main: {
+            marginTop: 10,
+            fontSize: md,
+        },
+        button: {},
+    });
+
+    const classes = useStyles();
+
+    return (
+        <Container className={classes.container} maxWidth="md">
+            <Card className={classes.card}>
+                <Image cloudName="djr6sgsbd" publicId="branding_copy.png">
+                    <Transformation
+                        className={classes.center}
+                        width="150"
+                        crop="scale"
+                    />
+                </Image>
+                <CardContent>
+                    <Typography
+                        className={classes.title}
+                        variant="h1"
+                        component="h1"
+                    >
+                        Temperature Checker
+                    </Typography>
+                    <Typography
+                        className={classes.main}
+                        variant="h1"
+                        component="h3"
+                    >
+                        Your current temperature : {outputTemp("user")}
+                    </Typography>
+                    <Typography
+                        className={classes.main}
+                        variant="h1"
+                        component="h3"
+                    >
+                        Type in a city name ...
+                    </Typography>
+                    <TextField
+                        required
+                        id="standard-basic"
+                        label="City"
+                        onChange={handleChange}
+                        value={city}
+                    />
+                    {cityFetched && (
+                        <Typography
+                            className={classes.main}
+                            variant="h1"
+                            component="h3"
+                        >
+                            {`Current temperature in ${city} : ${outputTemp(
+                                "city"
+                            )} `}
+                            {outputTempDiff()}
+                        </Typography>
+                    )}
+                </CardContent>
+                <CardActions>
+                    <Button
+                        className={classes.button}
+                        onClick={() => handleClick()}
+                        variant="contained"
+                    >
+                        Search
+                    </Button>
+                </CardActions>
+                {appError !== "" && <p>{appError}</p>}
             </Card>
         </Container>
     );
