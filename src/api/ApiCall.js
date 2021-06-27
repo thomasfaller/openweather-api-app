@@ -13,18 +13,5 @@ const queryLatLongWeather = (latitude, longitude) => {
 };
 
 const callOpenWeaterMap = (url) => axios.get(url);
-//   axios
-//     .get(url)
-//     .then((response) => {
-//       const {
-//         data: {
-//           main: { temp },
-//         },
-//       } = response;
-//       return { temp };
-//     })
-//     .catch((error) => {
-//       return error;
-//     });
 
 module.exports = { queryCityWeather, queryLatLongWeather };
